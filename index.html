@@ -1,859 +1,103 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#0f172a">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="manifest" href="./manifest.json">
-<title>K&M Finances</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-  body { font-family: 'Inter', sans-serif; }
-  .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-  .progress-bar { transition: width 0.6s ease; }
-  input[type="number"]::-webkit-inner-spin-button { opacity: 1; }
-  .bill-paid { opacity: 0.5; text-decoration: line-through; }
-  .tab-active { border-bottom: 2px solid #38bdf8; color: #38bdf8; }
-  @media print { .no-print { display: none !important; } body { background: white !important; color: black !important; } }
-</style>
-</head>
-<body class="bg-slate-900 text-white min-h-screen">
+K & M Finances
 
-<div id="app" class="max-w-2xl mx-auto px-4 py-6 pb-24">
 
-  <!-- HEADER -->
-  <div class="text-center mb-6">
-    <h1 class="text-lg font-medium text-slate-400">K & M Finances</h1>
-    <div class="text-xs text-slate-500 mt-1" id="currentDate"></div>
-  </div>
+Savings
 
-  <!-- NET WORTH -->
-  <div class="glass rounded-2xl p-6 mb-6 text-center">
-    <div class="text-sm text-slate-400 mb-1">Net Worth</div>
-    <div id="netWorth" class="text-4xl font-800 text-red-400"></div>
-    <div class="text-xs text-slate-500 mt-2">Assets: <span id="totalAssets" class="text-green-400"></span> &mdash; Debt: <span id="totalDebt" class="text-red-400"></span></div>
-  </div>
 
-  <!-- TABS -->
-  <div class="flex gap-1 mb-6 overflow-x-auto no-print text-sm border-b border-slate-700">
-    <button onclick="showTab('accounts')" id="tab-accounts" class="px-3 py-2 tab-active whitespace-nowrap">Accounts</button>
-    <button onclick="showTab('bills')" id="tab-bills" class="px-3 py-2 text-slate-400 whitespace-nowrap">Bills</button>
-    <button onclick="showTab('budget')" id="tab-budget" class="px-3 py-2 text-slate-400 whitespace-nowrap">Budget</button>
-    <button onclick="showTab('income')" id="tab-income" class="px-3 py-2 text-slate-400 whitespace-nowrap">Income</button>
-    <button onclick="showTab('savings')" id="tab-savings" class="px-3 py-2 text-slate-400 whitespace-nowrap">Savings</button>
-    <button onclick="showTab('debt')" id="tab-debt" class="px-3 py-2 text-slate-400 whitespace-nowrap">Debt</button>
-    <button onclick="showTab('strategy')" id="tab-strategy" class="px-3 py-2 text-slate-400 whitespace-nowrap">Strategy</button>
-    <button onclick="showTab('start')" id="tab-start" class="px-3 py-2 text-slate-400 whitespace-nowrap">Get Started</button>
-  </div>
 
-  <!-- ACCOUNTS TAB -->
-  <div id="panel-accounts" class="tab-panel">
-    <h2 class="text-lg font-semibold mb-3">Accounts</h2>
-    <div class="text-xs text-slate-500 mb-3">Tap a balance to update it</div>
-    <div id="accountCards" class="space-y-3"></div>
-  </div>
 
-  <!-- BILLS TAB -->
-  <div id="panel-bills" class="tab-panel hidden">
-    <div class="flex justify-between items-center mb-3">
-      <h2 class="text-lg font-semibold">This Month's Bills</h2>
-      <a href="./bills.ics" download class="text-xs bg-sky-600 px-3 py-1 rounded-full no-print">Add to Calendar</a>
-    </div>
-    <div class="text-xs text-slate-500 mb-3">Tap to mark paid. Bills with alerts set 3 days + 1 day before due.</div>
-    <div id="billsList" class="space-y-2"></div>
-    <div class="glass rounded-xl p-4 mt-4">
-      <div class="text-sm text-slate-400">Total Bills This Month</div>
-      <div id="billsTotal" class="text-2xl font-bold text-amber-400"></div>
-      <div class="text-xs text-slate-500 mt-1">Paid: <span id="billsPaid" class="text-green-400"></span> &mdash; Remaining: <span id="billsRemaining" class="text-red-400"></span></div>
-    </div>
-    <div id="billsSplit" class="glass rounded-xl p-4 mt-3"></div>
-    <div class="glass rounded-xl p-3 mt-3 border-l-4 border-red-500">
-      <div class="text-xs text-red-300 font-semibold">CHECK: Cancel duplicate Hulu!</div>
-      <div class="text-xs text-slate-400">Hulu is charging on BOTH Maceo's Chase checking ($13.85) AND Katlyn's Capital One ($12.99). Cancel one.</div>
-    </div>
-  </div>
 
-  <!-- BUDGET TAB -->
-  <div id="panel-budget" class="tab-panel hidden">
-    <h2 class="text-lg font-semibold mb-3">Monthly Budget</h2>
-    <div class="text-xs text-slate-500 mb-3">Track spending by category. Tap amount to log spending.</div>
-    <div id="budgetCategories" class="space-y-3"></div>
-    <div class="glass rounded-xl p-4 mt-4">
-      <div class="flex justify-between">
-        <span class="text-sm text-slate-400">Total Budgeted</span>
-        <span id="budgetTotal" class="font-semibold"></span>
-      </div>
-      <div class="flex justify-between mt-1">
-        <span class="text-sm text-slate-400">Total Spent</span>
-        <span id="budgetSpent" class="font-semibold text-amber-400"></span>
-      </div>
-      <div class="flex justify-between mt-1">
-        <span class="text-sm text-slate-400">Remaining</span>
-        <span id="budgetRemaining" class="font-semibold text-green-400"></span>
-      </div>
-    </div>
-  </div>
+Accounts Bills Budget Income Savings Debt Quest Strategy Get Started
+Accounts
+Tap a balance to update it
 
-  <!-- INCOME TAB -->
-  <div id="panel-income" class="tab-panel hidden">
-    <h2 class="text-lg font-semibold mb-3">Income This Month</h2>
-    <div class="glass rounded-xl p-4 mb-4">
-      <div class="flex gap-2 no-print">
-        <select id="incomeSource" class="bg-slate-800 rounded px-2 py-1 text-sm flex-1">
-          <option value="Equinox (Katlyn)">Equinox (Katlyn)</option>
-          <option value="Milk & Honey FINAL (Katlyn)">M&H Final (Katlyn)</option>
-          <option value="Maceo Work">Maceo Work</option>
-          <option value="Other">Other</option>
-        </select>
-        <input id="incomeAmount" type="number" placeholder="$" class="bg-slate-800 rounded px-2 py-1 text-sm w-24">
-        <button onclick="addIncome()" class="bg-green-600 px-3 py-1 rounded text-sm font-medium">Add</button>
-      </div>
-    </div>
-    <div id="incomeList" class="space-y-2"></div>
-    <div class="glass rounded-xl p-4 mt-4">
-      <div class="flex justify-between">
-        <span class="text-sm text-slate-400">Total Income This Month</span>
-        <span id="incomeTotal" class="text-2xl font-bold text-green-400"></span>
-      </div>
-      <div class="flex justify-between mt-2">
-        <span class="text-sm text-slate-400">Target</span>
-        <span class="text-sm text-slate-300">$5,350</span>
-      </div>
-      <div class="w-full bg-slate-700 rounded-full h-2 mt-2">
-        <div id="incomeBar" class="bg-green-500 h-2 rounded-full progress-bar" style="width:0%"></div>
-      </div>
-    </div>
-    <!-- Cash Flow Summary -->
-    <div class="glass rounded-xl p-4 mt-4">
-      <h3 class="font-semibold mb-2">Cash Flow This Month</h3>
-      <div class="flex justify-between text-sm">
-        <span class="text-slate-400">Income</span>
-        <span id="cfIncome" class="text-green-400"></span>
-      </div>
-      <div class="flex justify-between text-sm">
-        <span class="text-slate-400">Bills + Minimums</span>
-        <span id="cfBills" class="text-red-400"></span>
-      </div>
-      <div class="flex justify-between text-sm">
-        <span class="text-slate-400">Budget Spending</span>
-        <span id="cfBudget" class="text-amber-400"></span>
-      </div>
-      <div class="border-t border-slate-700 my-2"></div>
-      <div class="flex justify-between font-semibold">
-        <span>Surplus / Deficit</span>
-        <span id="cfSurplus"></span>
-      </div>
-      <div class="text-xs text-slate-500 mt-2" id="cfAdvice"></div>
-    </div>
-  </div>
+This Month's Bills
+Add to Calendar
+Tap to mark paid. Bills with alerts set 3 days + 1 day before due.
 
-  <!-- SAVINGS TAB -->
-  <div id="panel-savings" class="tab-panel hidden">
-    <h2 class="text-lg font-semibold mb-3">Savings Goals</h2>
-    <div id="savingsGoals" class="space-y-4"></div>
-    <div class="glass rounded-xl p-4 mt-4 no-print">
-      <h3 class="font-semibold mb-2">Log Savings Deposit</h3>
-      <div class="flex gap-2">
-        <input id="savingsDeposit" type="number" placeholder="$ amount" class="bg-slate-800 rounded px-2 py-1 text-sm flex-1">
-        <button onclick="addSavingsDeposit()" class="bg-sky-600 px-3 py-1 rounded text-sm font-medium">Deposit</button>
-      </div>
-    </div>
-  </div>
+Total Bills This Month
 
-  <!-- DEBT TAB -->
-  <div id="panel-debt" class="tab-panel hidden">
-    <h2 class="text-lg font-semibold mb-3">Debt Overview</h2>
-    <div class="text-xs text-slate-500 mb-3">Paying minimums. Small extra chunks when possible.</div>
-    <div id="debtCards" class="space-y-3"></div>
-    <div class="glass rounded-xl p-4 mt-4">
-      <div class="flex justify-between">
-        <span class="text-sm text-slate-400">Total Debt</span>
-        <span id="debtTotalDisplay" class="text-2xl font-bold text-red-400"></span>
-      </div>
-      <div class="flex justify-between mt-1">
-        <span class="text-sm text-slate-400">Monthly Minimums</span>
-        <span class="text-sm text-slate-300">$539</span>
-      </div>
-      <div class="flex justify-between mt-1">
-        <span class="text-sm text-slate-400">Est. Monthly Interest</span>
-        <span class="text-sm text-red-300">~$300</span>
-      </div>
-    </div>
-    <div class="glass rounded-xl p-4 mt-4 no-print">
-      <h3 class="font-semibold mb-2">Log Extra Debt Payment</h3>
-      <div class="flex gap-2">
-        <select id="debtPayTarget" class="bg-slate-800 rounded px-2 py-1 text-sm flex-1">
-        </select>
-        <input id="debtPayAmount" type="number" placeholder="$" class="bg-slate-800 rounded px-2 py-1 text-sm w-24">
-        <button onclick="addDebtPayment()" class="bg-red-600 px-3 py-1 rounded text-sm font-medium">Pay</button>
-      </div>
-    </div>
-  </div>
+Paid: — Remaining:
 
-  <!-- GET STARTED TAB -->
-  <div id="panel-start" class="tab-panel hidden">
-    <h2 class="text-lg font-semibold mb-1">Getting Started Checklist</h2>
-    <div class="text-xs text-slate-500 mb-4">Do these once. Tap to check off as you go.</div>
+CHECK: Cancel duplicate Hulu!
+Hulu is charging on BOTH Maceo's Chase checking ($13.85) AND Katlyn's Capital One ($12.99). Cancel one.
+Monthly Budget
+Track spending by category. Tap amount to log spending.
 
-    <div id="checklistItems" class="space-y-2">
-    </div>
-  </div>
+Total Budgeted
+Total Spent
+Remaining
+Income This Month
+          Equinox (Katlyn)
+          M&H Final (Katlyn)
+          Maceo Work
+          Other
+         Add
 
-  <!-- STRATEGY TAB -->
-  <div id="panel-strategy" class="tab-panel hidden">
-    <h2 class="text-lg font-semibold mb-3">Card Strategy</h2>
+Total Income This Month
+Target $5,350
 
-    <div class="glass rounded-xl p-4 mb-3 border-l-4 border-green-500">
-      <div class="font-semibold text-green-400 mb-1">DEBIT ONLY for Daily Spending</div>
-      <div class="text-sm text-slate-300">Groceries, gas, pharmacy, coffee, any in-person purchases — <strong>debit card only.</strong> If it's not in checking, you can't buy it.</div>
-    </div>
+Cash Flow This Month
+Income
+Bills + Minimums
+Budget Spending
 
-    <div class="glass rounded-xl p-4 mb-3 border-l-4 border-red-500">
-      <div class="font-semibold text-red-400 mb-1">NO New Credit Card Purchases</div>
-      <div class="text-sm text-slate-300">Every dollar on a credit card costs 20-28 cents extra in interest. Rewards (1-2%) don't cover it. Stop using credit cards for spending.</div>
-    </div>
+Surplus / Deficit
 
-    <h3 class="font-semibold mt-5 mb-3">Card-by-Card Rules</h3>
+Savings Goals
 
-    <div class="glass rounded-xl p-3 mb-2">
-      <div class="flex justify-between items-center">
-        <div class="font-medium text-sm">Katlyn AFCU Checking</div>
-        <div class="text-xs bg-green-900 text-green-300 px-2 py-0.5 rounded-full">USE THIS</div>
-      </div>
-      <div class="text-xs text-slate-400 mt-1">All of Katlyn's daily spending: groceries, gas, pharmacy, misc</div>
-    </div>
 
-    <div class="glass rounded-xl p-3 mb-2">
-      <div class="flex justify-between items-center">
-        <div class="font-medium text-sm">Maceo Chase Checking</div>
-        <div class="text-xs bg-green-900 text-green-300 px-2 py-0.5 rounded-full">USE THIS</div>
-      </div>
-      <div class="text-xs text-slate-400 mt-1">All of Maceo's daily spending: groceries, gas, misc</div>
-    </div>
 
-    <div class="glass rounded-xl p-3 mb-2">
-      <div class="flex justify-between items-center">
-        <div class="font-medium text-sm">Chase Sapphire *5302</div>
-        <div class="text-xs bg-red-900 text-red-300 px-2 py-0.5 rounded-full">STOP USING</div>
-      </div>
-      <div class="text-xs text-slate-400 mt-1">27.99% APR. Existing auto-pay subs only. No new purchases.</div>
-    </div>
+Log Savings Deposit
+Deposit
+Net Worth
 
-    <div class="glass rounded-xl p-3 mb-2">
-      <div class="flex justify-between items-center">
-        <div class="font-medium text-sm">Cap One Venture *5297</div>
-        <div class="text-xs bg-red-900 text-red-300 px-2 py-0.5 rounded-full">STOP USING</div>
-      </div>
-      <div class="text-xs text-slate-400 mt-1">27.49% APR. Only renters insurance auto-charge. Nothing else.</div>
-    </div>
+Assets: — Debt:
+Boss Battle Arena
+Defeat the debt bosses! Pay minimums + extra to deal damage.
 
-    <div class="glass rounded-xl p-3 mb-2">
-      <div class="flex justify-between items-center">
-        <div class="font-medium text-sm">AFCU Visa Classic *0644</div>
-        <div class="text-xs bg-red-900 text-red-300 px-2 py-0.5 rounded-full">STOP USING</div>
-      </div>
-      <div class="text-xs text-slate-400 mt-1">18% APR. Existing auto-charges only. Nothing new.</div>
-    </div>
+Total Debt
+Monthly Minimums $539
+Est. Monthly Interest ~$300
+Log Extra Debt Payment
+         Pay
+Quest Party
 
-    <div class="glass rounded-xl p-3 mb-2">
-      <div class="flex justify-between items-center">
-        <div class="font-medium text-sm">AFCU Line of Credit *0644</div>
-        <div class="text-xs bg-red-900 text-red-300 px-2 py-0.5 rounded-full">STOP USING</div>
-      </div>
-      <div class="text-xs text-slate-400 mt-1">18% APR. Don't touch. Just pay the minimum.</div>
-    </div>
 
-    <h3 class="font-semibold mt-5 mb-3">Action Items</h3>
 
-    <div class="glass rounded-xl p-4 mb-3 border-l-4 border-sky-500">
-      <div class="font-semibold text-sky-400 mb-1">Chase Rewards Points — Save for Travel</div>
-      <div class="text-sm text-slate-300">Maceo has <strong>139,354 Ultimate Rewards points</strong> (~$2,090 toward travel via Sapphire Reserve). Keeping these for a future trip. Don't redeem for cash.</div>
-    </div>
+Badge Wall
 
-    <div class="glass rounded-xl p-4 mb-3 border-l-4 border-amber-500">
-      <div class="font-semibold text-amber-400 mb-1">Move Rent to Checking</div>
-      <div class="text-sm text-slate-300">Stop paying rent on the Chase Sapphire. The building charges $60 fee + you pay 27.99% interest on $1,892. That's <strong>~$104/mo wasted.</strong> Pay from checking instead.</div>
-    </div>
+Getting Started Checklist
+Do these once. Tap to check off as you go.
 
-    <div class="glass rounded-xl p-4 mb-3 border-l-4 border-amber-500">
-      <div class="font-semibold text-amber-400 mb-1">Check AFCU Rewards</div>
-      <div class="text-sm text-slate-300">720 rewards points on AFCU. Check if redeemable for cash back — even a small amount helps.</div>
-    </div>
-  </div>
-
-</div>
-
-<script>
-// ============ DATA ============
-const STORAGE_KEY = 'km_finances_v2';
-
-const DEFAULT_DATA = {
-  month: new Date().getMonth(),
-  year: new Date().getFullYear(),
-  accounts: [
-    { id: 'katlyn_checking', name: 'AFCU Checking', owner: 'Katlyn', balance: 135.00, type: 'asset' },
-    { id: 'katlyn_savings', name: 'AFCU Savings', owner: 'Katlyn', balance: 1.03, type: 'asset' },
-    { id: 'maceo_checking', name: 'Chase Checking', owner: 'Maceo', balance: 5.00, type: 'asset' },
-    { id: 'maceo_afcu_visa', name: 'AFCU Visa Signature', owner: 'Maceo', balance: 8330.00, type: 'debt', apr: 18.00, minPayment: 198 },
-    { id: 'katlyn_capone', name: 'Cap One Venture', owner: 'Katlyn', balance: 6827.27, type: 'debt', apr: 27.49, minPayment: 177 },
-    { id: 'maceo_sapphire', name: 'Chase Sapphire', owner: 'Maceo', balance: 6704.00, type: 'debt', apr: 27.99, minPayment: 211 },
-    { id: 'katlyn_visa', name: 'AFCU Visa Classic', owner: 'Katlyn', balance: 1045.36, type: 'debt', apr: 18.00, minPayment: 26 },
-    { id: 'maceo_capone', name: 'Cap One CC (Maceo)', owner: 'Maceo', balance: 734.20, type: 'debt', apr: 27.00, minPayment: 25 },
-    { id: 'katlyn_loc', name: 'AFCU LOC (Katlyn)', owner: 'Katlyn', balance: 491.83, type: 'debt', apr: 18.00, minPayment: 25 },
-    { id: 'maceo_loc', name: 'AFCU LOC (Maceo)', owner: 'Maceo', balance: 230.00, type: 'debt', apr: 18.00, minPayment: 25 },
-  ],
-  // paysFrom: K = Katlyn Checking, M = Maceo Checking, KC = Katlyn Cap One, MC = Maceo Chase card, auto-charge on card
-  bills: [
-    { id: 'rent', name: 'Rent', amount: 1892, dueDay: 1, paid: false, paysFrom: 'M' },
-    { id: 'sonata', name: 'Sonata Car Payment', amount: 129, dueDay: 1, paid: false, paysFrom: 'M' },
-    { id: 'gas_bill', name: 'Gas Bill (Utility)', amount: 10, dueDay: 1, paid: false, paysFrom: 'K' },
-    { id: 'student_loan', name: 'Student Loan', amount: 59, dueDay: 3, paid: false, paysFrom: 'M' },
-    { id: 'spotify', name: 'Spotify', amount: 19, dueDay: 3, paid: false, paysFrom: 'M' },
-    { id: 'apple_icloud', name: 'Apple iCloud', amount: 1, dueDay: 14, paid: false, paysFrom: 'KC' },
-    { id: 'parking', name: 'Parking (Parkade)', amount: 130, dueDay: 12, paid: false, paysFrom: 'K' },
-    { id: 'rav4', name: 'RAV4 Car Payment', amount: 400, dueDay: 13, paid: false, paysFrom: 'M' },
-    { id: 'ymca', name: 'YMCA (Gym)', amount: 60, dueDay: 13, paid: false, paysFrom: 'MC' },
-    { id: 'chase_sapphire', name: 'Chase Sapphire Min', amount: 211, dueDay: 14, paid: false, paysFrom: 'M' },
-    { id: 'maceo_phone', name: 'Maceo Phone Bill', amount: 50, dueDay: 15, paid: false, paysFrom: 'M' },
-    { id: 'google_one', name: 'Google One', amount: 2, dueDay: 15, paid: false, paysFrom: 'KC' },
-    { id: 'electric', name: 'Electric (SoCal Edison)', amount: 130, dueDay: 17, paid: false, paysFrom: 'K' },
-    { id: 'vimeo', name: 'Vimeo', amount: 44, dueDay: 18, paid: false, paysFrom: 'MC' },
-    { id: 'filmlocal', name: 'Filmlocal', amount: 9, dueDay: 20, paid: false, paysFrom: 'MC' },
-    { id: 'renters_ins', name: 'Renters Insurance', amount: 25, dueDay: 25, paid: false, paysFrom: 'KC' },
-    { id: 'loan_jason', name: 'Loan (Jason)', amount: 294, dueDay: 25, paid: false, paysFrom: 'K' },
-    { id: 'capone_min', name: 'Cap One Venture Min', amount: 177, dueDay: 27, paid: false, paysFrom: 'K' },
-    { id: 'streaming', name: 'Netflix or Hulu (PICK ONE)', amount: 27, dueDay: 28, paid: false, paysFrom: 'MC' },
-    { id: 'afcu_visa_min', name: 'AFCU Visa Classic Min', amount: 26, dueDay: 28, paid: false, paysFrom: 'K' },
-    { id: 'afcu_visa_sig_min', name: 'AFCU Visa Sig Min (Maceo)', amount: 198, dueDay: 28, paid: false, paysFrom: 'M' },
-    { id: 'maceo_capone_min', name: 'Cap One CC Min (Maceo)', amount: 25, dueDay: 28, paid: false, paysFrom: 'M' },
-    { id: 'afcu_loc_katlyn', name: 'AFCU LOC Min (Katlyn)', amount: 25, dueDay: 30, paid: false, paysFrom: 'K' },
-    { id: 'afcu_loc_maceo', name: 'AFCU LOC Min (Maceo)', amount: 25, dueDay: 30, paid: false, paysFrom: 'M' },
-    { id: 'car_insurance', name: 'Car Insurance (Root)', amount: 264, dueDay: 30, paid: false, paysFrom: 'M' },
-    { id: 'chase_fee', name: 'Chase Service Fee', amount: 15, dueDay: 30, paid: false, paysFrom: 'M' },
-  ],
-  budget: [
-    { id: 'groceries', name: 'Groceries', limit: 600, spent: 0 },
-    { id: 'gas', name: 'Gas', limit: 120, spent: 0 },
-    { id: 'coffee', name: 'Coffee (home brew)', limit: 15, spent: 0 },
-    { id: 'pharmacy', name: 'Pharmacy / Essentials', limit: 75, spent: 0 },
-    { id: 'misc', name: 'Misc / Emergency', limit: 40, spent: 0 },
-  ],
-  income: [],
-  savingsBalance: 0,
-  savingsGoal1: 1000,  // emergency fund
-  savingsGoal2: 15000, // bigger goal
-  debtPayments: [],
-  checklist: [
-    { id: 'c1', text: 'Cancel duplicate Hulu (check both Maceo Chase + Katlyn Cap One)', done: false },
-    { id: 'c2', text: 'Cancel Finch subscription ($9.98/mo on Capital One)', done: false },
-    { id: 'c3', text: 'Cancel HBO Max ($22.99/mo on Capital One)', done: false },
-    { id: 'c4', text: 'Cancel Google TV ($19.99/mo on Capital One)', done: false },
-    { id: 'c5', text: 'Check Apple subscriptions on iPhone (Settings > Name > Subscriptions) — cancel anything except iCloud', done: false },
-    { id: 'c6', text: 'Move rent payment from Chase Sapphire to Maceo checking (saves ~$104/mo)', done: false },
-    { id: 'c7', text: 'Delete Starbucks app from Maceo\'s phone. Buy a bag of coffee + filters instead.', done: false },
-    { id: 'c8', text: 'Delete DoorDash / Uber Eats apps from both phones', done: false },
-    { id: 'c9', text: 'Delete Amazon app from Katlyn\'s phone (use browser if truly needed)', done: false },
-    { id: 'c10', text: 'Remove all credit cards from Apple Pay / Google Pay — only keep debit cards', done: false },
-    { id: 'c11', text: 'Pick ONE grocery store (Vons) and only shop there with a list', done: false },
-    { id: 'c12', text: 'Set up auto-pay for all minimum debt payments so you never miss one', done: false },
-    { id: 'c13', text: 'Import bills.ics into iPhone calendar (tap the file from this folder)', done: false },
-    { id: 'c14', text: 'Install this app on home screen (Share > Add to Home Screen)', done: false },
-    { id: 'c15', text: 'Check AFCU rewards (720 points) — redeem for cash if possible', done: false },
-    { id: 'c16', text: 'Set Maceo Chase direct deposit to $500+/mo to avoid $15 service fee', done: false },
-    { id: 'c17', text: 'Open or designate a savings account (AFCU savings works) — this is where surplus goes', done: false },
-  ],
-};
-
-// ============ STATE ============
-let data = loadData();
-
-function loadData() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    const parsed = JSON.parse(saved);
-    const now = new Date();
-    // Reset monthly data if month changed
-    if (parsed.month !== now.getMonth() || parsed.year !== now.getFullYear()) {
-      parsed.month = now.getMonth();
-      parsed.year = now.getFullYear();
-      parsed.bills.forEach(b => b.paid = false);
-      parsed.budget.forEach(b => b.spent = 0);
-      parsed.income = [];
-      parsed.debtPayments = [];
-    }
-    return parsed;
-  }
-  return JSON.parse(JSON.stringify(DEFAULT_DATA));
-}
-
-function saveData() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
-
-// ============ HELPERS ============
-function fmt(n) {
-  return (n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function getAssets() {
-  return data.accounts.filter(a => a.type === 'asset').reduce((s, a) => s + a.balance, 0) + data.savingsBalance;
-}
-
-function getDebt() {
-  return data.accounts.filter(a => a.type === 'debt').reduce((s, a) => s + a.balance, 0);
-}
-
-function getNetWorth() {
-  return getAssets() - getDebt();
-}
-
-function getTotalIncome() {
-  return data.income.reduce((s, i) => s + i.amount, 0);
-}
-
-function getBillsTotal() {
-  return data.bills.reduce((s, b) => s + b.amount, 0);
-}
-
-function getBillsPaid() {
-  return data.bills.filter(b => b.paid).reduce((s, b) => s + b.amount, 0);
-}
-
-function getBudgetSpent() {
-  return data.budget.reduce((s, b) => s + b.spent, 0);
-}
-
-function getBudgetLimit() {
-  return data.budget.reduce((s, b) => s + b.limit, 0);
-}
-
-// ============ RENDER ============
-function render() {
-  // Date
-  const now = new Date();
-  document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-
-  // Net worth
-  const nw = getNetWorth();
-  const nwEl = document.getElementById('netWorth');
-  nwEl.textContent = fmt(nw);
-  nwEl.className = `text-4xl font-extrabold ${nw >= 0 ? 'text-green-400' : 'text-red-400'}`;
-  document.getElementById('totalAssets').textContent = fmt(getAssets());
-  document.getElementById('totalDebt').textContent = fmt(getDebt());
-
-  renderAccounts();
-  renderBills();
-  renderBudget();
-  renderIncome();
-  renderSavings();
-  renderChecklist();
-  renderDebt();
-}
-
-function renderAccounts() {
-  const container = document.getElementById('accountCards');
-  container.innerHTML = '';
-
-  // Assets
-  const assets = data.accounts.filter(a => a.type === 'asset');
-  const assetHeader = document.createElement('div');
-  assetHeader.className = 'text-xs text-green-400 font-semibold uppercase tracking-wider mb-1';
-  assetHeader.textContent = 'Cash Accounts';
-  container.appendChild(assetHeader);
-
-  assets.forEach(a => {
-    container.appendChild(createAccountCard(a, 'green'));
-  });
-
-  // Savings
-  const savDiv = document.createElement('div');
-  savDiv.className = 'glass rounded-xl p-3 flex justify-between items-center cursor-pointer hover:bg-slate-800/50';
-  savDiv.innerHTML = `
-    <div>
-      <div class="text-sm font-medium">Savings Fund</div>
-      <div class="text-xs text-slate-500">Goal: ${fmt(data.savingsGoal2)}</div>
-    </div>
-    <div class="text-lg font-bold text-green-400">${fmt(data.savingsBalance)}</div>
-  `;
-  container.appendChild(savDiv);
-
-  // Debts
-  const debtHeader = document.createElement('div');
-  debtHeader.className = 'text-xs text-red-400 font-semibold uppercase tracking-wider mb-1 mt-4';
-  debtHeader.textContent = 'Debts';
-  container.appendChild(debtHeader);
-
-  const debts = data.accounts.filter(a => a.type === 'debt').sort((a, b) => b.apr - a.apr);
-  debts.forEach(a => {
-    container.appendChild(createAccountCard(a, 'red'));
-  });
-}
-
-function createAccountCard(account, color) {
-  const div = document.createElement('div');
-  div.className = 'glass rounded-xl p-3 flex justify-between items-center cursor-pointer hover:bg-slate-800/50';
-  div.innerHTML = `
-    <div>
-      <div class="text-sm font-medium">${account.name}</div>
-      <div class="text-xs text-slate-500">${account.owner}${account.apr ? ' | ' + account.apr + '% APR' : ''}</div>
-    </div>
-    <div class="text-lg font-bold text-${color}-400">${account.type === 'debt' ? '-' : ''}${fmt(account.balance)}</div>
-  `;
-  div.onclick = () => {
-    const newVal = prompt(`Update ${account.name} balance:`, account.balance.toFixed(2));
-    if (newVal !== null && !isNaN(parseFloat(newVal))) {
-      account.balance = parseFloat(newVal);
-      saveData();
-      render();
-    }
-  };
-  return div;
-}
-
-function renderBills() {
-  const container = document.getElementById('billsList');
-  container.innerHTML = '';
-  const today = new Date().getDate();
-
-  data.bills.sort((a, b) => a.dueDay - b.dueDay).forEach(bill => {
-    const isPast = bill.dueDay < today && !bill.paid;
-    const isSoon = bill.dueDay - today <= 3 && bill.dueDay >= today && !bill.paid;
-
-    let statusColor = 'text-slate-400';
-    let badge = '';
-    if (bill.paid) { statusColor = 'text-green-400'; badge = '<span class="text-xs bg-green-900 text-green-300 px-2 py-0.5 rounded-full">PAID</span>'; }
-    else if (isPast) { statusColor = 'text-red-400'; badge = '<span class="text-xs bg-red-900 text-red-300 px-2 py-0.5 rounded-full">OVERDUE</span>'; }
-    else if (isSoon) { statusColor = 'text-amber-400'; badge = '<span class="text-xs bg-amber-900 text-amber-300 px-2 py-0.5 rounded-full">DUE SOON</span>'; }
-
-    const div = document.createElement('div');
-    div.className = `glass rounded-xl p-3 flex justify-between items-center cursor-pointer hover:bg-slate-800/50 ${bill.paid ? 'bill-paid' : ''}`;
-    div.innerHTML = `
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${bill.paid ? 'bg-green-900 text-green-300' : 'bg-slate-700 text-slate-300'}">${bill.dueDay}</div>
-        <div>
-          <div class="text-sm font-medium">${bill.name}</div>
-          <div class="text-xs text-slate-500">Due the ${ordinal(bill.dueDay)} ${badge} <span class="text-slate-600">${{K:'Katlyn Chk',M:'Maceo Chk',KC:'Katlyn Card',MC:'Maceo Card'}[bill.paysFrom]||''}</span></div>
-        </div>
-      </div>
-      <div class="text-sm font-bold ${statusColor}">${fmt(bill.amount)}</div>
-    `;
-    div.onclick = () => {
-      bill.paid = !bill.paid;
-      saveData();
-      render();
-    };
-    container.appendChild(div);
-  });
-
-  document.getElementById('billsTotal').textContent = fmt(getBillsTotal());
-  document.getElementById('billsPaid').textContent = fmt(getBillsPaid());
-  document.getElementById('billsRemaining').textContent = fmt(getBillsTotal() - getBillsPaid());
-
-  // Account split summary
-  const splitDiv = document.getElementById('billsSplit');
-  if (splitDiv) {
-    const kTotal = data.bills.filter(b => b.paysFrom === 'K').reduce((s,b) => s + b.amount, 0);
-    const mTotal = data.bills.filter(b => b.paysFrom === 'M').reduce((s,b) => s + b.amount, 0);
-    const kcTotal = data.bills.filter(b => b.paysFrom === 'KC').reduce((s,b) => s + b.amount, 0);
-    const mcTotal = data.bills.filter(b => b.paysFrom === 'MC').reduce((s,b) => s + b.amount, 0);
-    splitDiv.innerHTML = `
-      <div class="text-sm font-medium mb-2">Who Needs What in Checking</div>
-      <div class="flex justify-between text-xs"><span class="text-slate-400">Katlyn Checking needs:</span><span class="text-amber-400 font-semibold">${fmt(kTotal)}</span></div>
-      <div class="flex justify-between text-xs"><span class="text-slate-400">Maceo Checking needs:</span><span class="text-amber-400 font-semibold">${fmt(mTotal)}</span></div>
-      <div class="flex justify-between text-xs mt-1"><span class="text-slate-500">Auto-charge on Katlyn cards:</span><span class="text-slate-500">${fmt(kcTotal)}</span></div>
-      <div class="flex justify-between text-xs"><span class="text-slate-500">Auto-charge on Maceo cards:</span><span class="text-slate-500">${fmt(mcTotal)}</span></div>
-    `;
-  }
-}
-
-function ordinal(n) {
-  const s = ['th','st','nd','rd'];
-  const v = n % 100;
-  return n + (s[(v-20)%10] || s[v] || s[0]);
-}
-
-function renderBudget() {
-  const container = document.getElementById('budgetCategories');
-  container.innerHTML = '';
-
-  data.budget.forEach(cat => {
-    const pct = Math.min((cat.spent / cat.limit) * 100, 100);
-    const over = cat.spent > cat.limit;
-    const barColor = over ? 'bg-red-500' : pct > 75 ? 'bg-amber-500' : 'bg-green-500';
-
-    const div = document.createElement('div');
-    div.className = 'glass rounded-xl p-3';
-    div.innerHTML = `
-      <div class="flex justify-between items-center mb-1">
-        <span class="text-sm font-medium">${cat.name}</span>
-        <span class="text-sm ${over ? 'text-red-400' : 'text-slate-300'}">${fmt(cat.spent)} / ${fmt(cat.limit)}</span>
-      </div>
-      <div class="w-full bg-slate-700 rounded-full h-2">
-        <div class="${barColor} h-2 rounded-full progress-bar" style="width:${pct}%"></div>
-      </div>
-      <div class="text-xs text-slate-500 mt-1">${fmt(cat.limit - cat.spent)} remaining</div>
-    `;
-    div.onclick = () => {
-      const amt = prompt(`Add spending to ${cat.name}:`, '0');
-      if (amt !== null && !isNaN(parseFloat(amt)) && parseFloat(amt) > 0) {
-        cat.spent += parseFloat(amt);
-        saveData();
-        render();
-      }
-    };
-    container.appendChild(div);
-  });
-
-  document.getElementById('budgetTotal').textContent = fmt(getBudgetLimit());
-  document.getElementById('budgetSpent').textContent = fmt(getBudgetSpent());
-  document.getElementById('budgetRemaining').textContent = fmt(getBudgetLimit() - getBudgetSpent());
-}
-
-function renderIncome() {
-  const container = document.getElementById('incomeList');
-  container.innerHTML = '';
-
-  data.income.forEach((inc, i) => {
-    const div = document.createElement('div');
-    div.className = 'glass rounded-xl p-3 flex justify-between items-center';
-    div.innerHTML = `
-      <div>
-        <div class="text-sm font-medium">${inc.source}</div>
-        <div class="text-xs text-slate-500">${inc.date}</div>
-      </div>
-      <div class="flex items-center gap-2">
-        <span class="text-sm font-bold text-green-400">+${fmt(inc.amount)}</span>
-        <button onclick="removeIncome(${i})" class="text-slate-600 hover:text-red-400 text-xs no-print">x</button>
-      </div>
-    `;
-    container.appendChild(div);
-  });
-
-  const total = getTotalIncome();
-  document.getElementById('incomeTotal').textContent = fmt(total);
-  const pct = Math.min((total / 5350) * 100, 100);
-  document.getElementById('incomeBar').style.width = pct + '%';
-
-  // Cash flow
-  const billsOwed = getBillsTotal();
-  const budgetSpent = getBudgetSpent();
-  document.getElementById('cfIncome').textContent = '+' + fmt(total);
-  document.getElementById('cfBills').textContent = '-' + fmt(billsOwed);
-  document.getElementById('cfBudget').textContent = '-' + fmt(budgetSpent);
-
-  const surplus = total - billsOwed - budgetSpent;
-  const surplusEl = document.getElementById('cfSurplus');
-  surplusEl.textContent = fmt(surplus);
-  surplusEl.className = `font-semibold ${surplus >= 0 ? 'text-green-400' : 'text-red-400'}`;
-
-  const adviceEl = document.getElementById('cfAdvice');
-  if (total === 0) {
-    adviceEl.textContent = 'Log your income as paychecks arrive to see your cash flow.';
-  } else if (surplus < 0) {
-    adviceEl.textContent = `You need ${fmt(Math.abs(surplus))} more income this month to cover bills + spending.`;
-    adviceEl.className = 'text-xs text-red-400 mt-2';
-  } else {
-    adviceEl.textContent = `${fmt(surplus)} available for savings + small debt payments.`;
-    adviceEl.className = 'text-xs text-green-400 mt-2';
-  }
-}
-
-function renderSavings() {
-  const container = document.getElementById('savingsGoals');
-  container.innerHTML = '';
-
-  const goals = [
-    { name: 'Emergency Fund', target: data.savingsGoal1, icon: '🛟' },
-    { name: 'Big Savings Goal', target: data.savingsGoal2, icon: '🏦' },
-  ];
-
-  goals.forEach(goal => {
-    const pct = Math.min((data.savingsBalance / goal.target) * 100, 100);
-    const div = document.createElement('div');
-    div.className = 'glass rounded-xl p-4';
-    div.innerHTML = `
-      <div class="flex justify-between items-center mb-2">
-        <span class="font-medium">${goal.icon} ${goal.name}</span>
-        <span class="text-sm text-slate-400">${fmt(goal.target)}</span>
-      </div>
-      <div class="w-full bg-slate-700 rounded-full h-3">
-        <div class="bg-sky-500 h-3 rounded-full progress-bar" style="width:${pct}%"></div>
-      </div>
-      <div class="flex justify-between mt-2 text-sm">
-        <span class="text-sky-400 font-semibold">${fmt(data.savingsBalance)}</span>
-        <span class="text-slate-500">${pct.toFixed(1)}%</span>
-      </div>
-    `;
-    container.appendChild(div);
-  });
-
-  // Monthly rate
-  const rateDiv = document.createElement('div');
-  rateDiv.className = 'glass rounded-xl p-4';
-  const monthsToEmergency = data.savingsBalance >= data.savingsGoal1 ? 0 : Math.ceil((data.savingsGoal1 - data.savingsBalance) / 430);
-  const monthsToBig = Math.ceil((data.savingsGoal2 - data.savingsBalance) / 430);
-  rateDiv.innerHTML = `
-    <div class="text-sm font-medium mb-2">At ~$430/mo savings rate:</div>
-    <div class="text-xs text-slate-400">Emergency fund ($${data.savingsGoal1.toLocaleString()}): <span class="text-sky-400">${monthsToEmergency === 0 ? 'DONE' : monthsToEmergency + ' month' + (monthsToEmergency > 1 ? 's' : '')}</span></div>
-    <div class="text-xs text-slate-400">Big goal ($${data.savingsGoal2.toLocaleString()}): <span class="text-sky-400">${monthsToBig} months (~${(monthsToBig / 12).toFixed(1)} years)</span></div>
-  `;
-  container.appendChild(rateDiv);
-}
-
-function renderDebt() {
-  const container = document.getElementById('debtCards');
-  const select = document.getElementById('debtPayTarget');
-  container.innerHTML = '';
-  select.innerHTML = '';
-
-  const debts = data.accounts.filter(a => a.type === 'debt').sort((a, b) => b.apr - a.apr);
-  const totalDebt = debts.reduce((s, d) => s + d.balance, 0);
-  const maxDebt = 16568; // original total for progress
-
-  debts.forEach(d => {
-    const paidOff = ((maxDebt - totalDebt) / maxDebt) * 100;
-    const monthlyInterest = (d.balance * (d.apr / 100)) / 12;
-
-    const div = document.createElement('div');
-    div.className = 'glass rounded-xl p-3';
-    div.innerHTML = `
-      <div class="flex justify-between items-center mb-1">
-        <div>
-          <div class="text-sm font-medium">${d.name}</div>
-          <div class="text-xs text-slate-500">${d.owner} | ${d.apr}% APR</div>
-        </div>
-        <div class="text-right">
-          <div class="text-lg font-bold text-red-400">${fmt(d.balance)}</div>
-          <div class="text-xs text-slate-500">Min: ${fmt(d.minPayment)}/mo</div>
-        </div>
-      </div>
-      <div class="text-xs text-red-300 mt-1">~${fmt(monthlyInterest)}/mo in interest</div>
-    `;
-    container.appendChild(div);
-
-    // Add to select
-    const opt = document.createElement('option');
-    opt.value = d.id;
-    opt.textContent = d.name;
-    select.appendChild(opt);
-  });
-
-  document.getElementById('debtTotalDisplay').textContent = fmt(totalDebt);
-
-  // Show payment history
-  if (data.debtPayments.length > 0) {
-    const histDiv = document.createElement('div');
-    histDiv.className = 'mt-3';
-    histDiv.innerHTML = '<div class="text-xs text-slate-500 mb-1">Extra payments this month:</div>';
-    data.debtPayments.forEach(p => {
-      histDiv.innerHTML += `<div class="text-xs text-slate-400">${p.date} - ${p.target}: ${fmt(p.amount)}</div>`;
-    });
-    container.appendChild(histDiv);
-  }
-}
-
-function renderChecklist() {
-  const container = document.getElementById('checklistItems');
-  if (!container || !data.checklist) return;
-  container.innerHTML = '';
-  const done = data.checklist.filter(c => c.done).length;
-  const total = data.checklist.length;
-
-  // Progress
-  const pct = (done / total) * 100;
-  const progDiv = document.createElement('div');
-  progDiv.className = 'glass rounded-xl p-3 mb-3';
-  progDiv.innerHTML = `
-    <div class="flex justify-between text-sm mb-1"><span>${done}/${total} completed</span><span class="text-slate-500">${pct.toFixed(0)}%</span></div>
-    <div class="w-full bg-slate-700 rounded-full h-2"><div class="bg-green-500 h-2 rounded-full progress-bar" style="width:${pct}%"></div></div>
-  `;
-  container.appendChild(progDiv);
-
-  data.checklist.forEach(item => {
-    const div = document.createElement('div');
-    div.className = `glass rounded-xl p-3 flex items-start gap-3 cursor-pointer hover:bg-slate-800/50 ${item.done ? 'opacity-50' : ''}`;
-    div.innerHTML = `
-      <div class="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center mt-0.5 ${item.done ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-500'}">${item.done ? '&#10003;' : ''}</div>
-      <div class="text-sm ${item.done ? 'line-through text-slate-500' : ''}">${item.text}</div>
-    `;
-    div.onclick = () => { item.done = !item.done; saveData(); render(); };
-    container.appendChild(div);
-  });
-}
-
-// ============ ACTIONS ============
-function addIncome() {
-  const source = document.getElementById('incomeSource').value;
-  const amount = parseFloat(document.getElementById('incomeAmount').value);
-  if (!amount || amount <= 0) return;
-
-  data.income.push({
-    source,
-    amount,
-    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-  });
-  document.getElementById('incomeAmount').value = '';
-  saveData();
-  render();
-}
-
-function removeIncome(index) {
-  data.income.splice(index, 1);
-  saveData();
-  render();
-}
-
-function addSavingsDeposit() {
-  const amount = parseFloat(document.getElementById('savingsDeposit').value);
-  if (!amount || amount <= 0) return;
-  data.savingsBalance += amount;
-  document.getElementById('savingsDeposit').value = '';
-  saveData();
-  render();
-}
-
-function addDebtPayment() {
-  const targetId = document.getElementById('debtPayTarget').value;
-  const amount = parseFloat(document.getElementById('debtPayAmount').value);
-  if (!amount || amount <= 0) return;
-
-  const account = data.accounts.find(a => a.id === targetId);
-  if (account) {
-    account.balance = Math.max(0, account.balance - amount);
-    data.debtPayments.push({
-      target: account.name,
-      amount,
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    });
-  }
-  document.getElementById('debtPayAmount').value = '';
-  saveData();
-  render();
-}
-
-// ============ TABS ============
-function showTab(name) {
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
-  document.querySelectorAll('[id^="tab-"]').forEach(t => {
-    t.classList.remove('tab-active');
-    t.classList.add('text-slate-400');
-  });
-  document.getElementById(`panel-${name}`).classList.remove('hidden');
-  const tab = document.getElementById(`tab-${name}`);
-  tab.classList.add('tab-active');
-  tab.classList.remove('text-slate-400');
-}
-
-// ============ PWA ============
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(() => {});
-}
-
-// ============ INIT ============
-render();
-</script>
-</body>
-</html>
+Card Strategy
+DEBIT ONLY for Daily Spending
+Groceries, gas, pharmacy, coffee, any in-person purchases — debit card only. If it's not in checking, you can't buy it.
+NO New Credit Card Purchases
+Every dollar on a credit card costs 20-28 cents extra in interest. Rewards (1-2%) don't cover it. Stop using credit cards for spending.
+Card-by-Card Rules
+Katlyn AFCU Checking
+USE THIS
+All of Katlyn's daily spending: groceries, gas, pharmacy, misc
+Maceo Chase Checking
+USE THIS
+All of Maceo's daily spending: groceries, gas, misc
+Chase Sapphire *5302
+STOP USING
+27.99% APR. Existing auto-pay subs only. No new purchases.
+Cap One Venture *5297
+STOP USING
+27.49% APR. Only renters insurance auto-charge. Nothing else.
+AFCU Visa Classic *0644
+STOP USING
+18% APR. Existing auto-charges only. Nothing new.
+AFCU Line of Credit *0644
+STOP USING
+18% APR. Don't touch. Just pay the minimum.
+Action Items
+Chase Rewards Points — Save for Travel
+Maceo has 139,354 Ultimate Rewards points (~$2,090 toward travel via Sapphire Reserve). Keeping these for a future trip. Don't redeem for cash.
+Move Rent to Checking
+Stop paying rent on the Chase Sapphire. The building charges $60 fee + you pay 27.99% interest on $1,892. That's ~$104/mo wasted. Pay from checking instead.
+Check AFCU Rewards
+720 rewards points on AFCU. Check if redeemable for cash back — even a small amount helps.
